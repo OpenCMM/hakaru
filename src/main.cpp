@@ -8,6 +8,7 @@ void ledBlink();
 const char* ssid = "<ssid>";
 const char* password =  "<password>";
 const float slowResponseTime = 10.0;
+const int touchPin = 4; // GPIO4 as the touch-sensitive pin
 
 WebSocketsServer webSocket(81);
 
@@ -37,8 +38,19 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
   }
 }
 
+void touchCallback() {
+  // wake up from deep sleep
+  Serial.println("Touch detected");
+  ledBlink();
+}
+
 void setup() {
   Serial.begin(115200);
+
+  touchAttachInterrupt(touchPin, touchCallback, 40); // Attach touch interrupt
+
+  //Configure Touchpad as wakeup source
+  esp_sleep_enable_touchpad_wakeup();
 
   // connect to WiFi
   WiFi.begin(ssid, password);
