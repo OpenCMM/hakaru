@@ -11,6 +11,32 @@ const float slowResponseTime = 10.0;
 
 WebSocketsServer webSocket(81);
 
+bool streaming = false;
+
+void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length) {
+  switch (type) {
+    case WStype_DISCONNECTED:
+      streaming = false; // Stop streaming data when a client disconnects
+      break;
+    case WStype_TEXT:
+      if (strcmp((char*)payload, "startStreaming") == 0) {
+        streaming = true; // Start streaming data when "startStreaming" message is received
+        Serial.println("Streaming started");
+      } else if (strcmp((char*)payload, "stopStreaming") == 0) {
+        streaming = false; // Stop streaming data when "stopStreaming" message is received
+        Serial.println("Streaming stopped");
+      } else if (strcmp((char*)payload, "deepSleep") == 0) {
+        streaming = false;
+        Serial.println("Going to sleep now");
+        delay(1000);
+        esp_deep_sleep_start();
+      }
+      break;
+    default:
+      break;
+  }
+}
+
 void setup() {
   Serial.begin(115200);
 
@@ -28,17 +54,20 @@ void setup() {
   Serial.println(WiFi.localIP());
 
   webSocket.begin();
+  webSocket.onEvent(webSocketEvent);
 }
 
 void loop() {
   webSocket.loop();
 
-  // Generate a random number here
-  int randomNum = mockGetSensorData();
-
-  // broadcast sensor data to all connected clients
-  String randomNumStr = String(randomNum);
-  webSocket.broadcastTXT(randomNumStr.c_str(), randomNumStr.length());
+  // If streaming is enabled, get sensor data and send it to the client
+  if (streaming) {
+    int randomNum = mockGetSensorData();
+    String randomNumStr = String(randomNum);
+    Serial.println(randomNumStr);
+    webSocket.broadcastTXT(randomNumStr.c_str(), randomNumStr.length());
+    delay(1000);
+  }
 }
 
 int mockGetSensorData() {
