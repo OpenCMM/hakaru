@@ -9,6 +9,7 @@ const char* ssid = "<ssid>";
 const char* password =  "<password>";
 const float slowResponseTime = 10.0;
 const int touchPin = 4; // GPIO4 as the touch-sensitive pin
+const int analogPin = 35; // for sensor data
 
 WebSocketsServer webSocket(81);
 
@@ -74,25 +75,23 @@ void loop() {
 
   // If streaming is enabled, get sensor data and send it to the client
   if (streaming) {
-    int randomNum = mockGetSensorData();
-    String randomNumStr = String(randomNum);
-    Serial.println(randomNumStr);
-    webSocket.broadcastTXT(randomNumStr.c_str(), randomNumStr.length());
-    delay(1000);
+    int data = mockGetSensorData();
+    String dataStr = String(data);
+    Serial.println(dataStr);
+    webSocket.broadcastTXT(dataStr.c_str(), dataStr.length());
+    delay(200);
   }
 }
 
 int mockGetSensorData() {
-  // Generate a random number here
-  int randomNum = random(0, 1000);
-  // Serial.println(randomNum);
+  int data = analogRead(analogPin);
 
   // response time
   // fast: 1.5ms
   // standard: 5ms
   // slow: 10ms
   delay(slowResponseTime);
-  return randomNum;
+  return data;
 }
 
 // LED blink
