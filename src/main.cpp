@@ -1,6 +1,9 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <WebSocketsServer.h>
+#include <Adafruit_ADS1X15.h>
+
+Adafruit_ADS1115 ads;  /* Use this for the 16-bit version */
 
 int mockGetSensorData();
 void ledBlink();
@@ -48,6 +51,13 @@ void touchCallback() {
 void setup() {
   Serial.begin(115200);
 
+  Serial.println("ADC Range: +/- 6.144V (1 bit = 3mV/ADS1015, 0.1875mV/ADS1115)");
+
+  if (!ads.begin()) {
+    Serial.println("Failed to initialize ADS.");
+    while (1);
+  }
+
   touchAttachInterrupt(touchPin, touchCallback, 40); // Attach touch interrupt
 
   //Configure Touchpad as wakeup source
@@ -84,14 +94,23 @@ void loop() {
 }
 
 int mockGetSensorData() {
-  int data = analogRead(analogPin);
+  // int data = analogRead(analogPin);
+  int16_t adc0;
+  float volts0;
+
+  adc0 = ads.readADC_SingleEnded(0);
+
+  // volts0 = ads.computeVolts(adc0);
+
+  // Serial.println("-----------------------------------------------------------");
+  // Serial.print("AIN0: "); Serial.print(adc0); Serial.print("  "); Serial.print(volts0); Serial.println("V");
 
   // response time
   // fast: 1.5ms
   // standard: 5ms
   // slow: 10ms
   delay(slowResponseTime);
-  return data;
+  return adc0;
 }
 
 // LED blink
