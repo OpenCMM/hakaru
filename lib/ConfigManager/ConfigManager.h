@@ -8,4 +8,5 @@ void startAPServer();
 void saveWiFiCredentials(String ssid, String password);
 void handleRoot();
 void handleConfig();
+void handleConnect();
 void connectToWiFi();

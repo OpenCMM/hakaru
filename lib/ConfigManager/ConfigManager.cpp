@@ -44,6 +44,7 @@ void startAPServer()
 
   // Define the web server routes
   server.on("/", HTTP_GET, handleRoot);
+  server.on("/connect", HTTP_GET, handleConnect);
   server.on("/config", HTTP_POST, handleConfig);
 
   server.begin();
@@ -79,14 +80,49 @@ void connectToWiFi()
 
 void handleRoot()
 {
-  String html = "<html><body>";
+  String html = "<!DOCTYPE html><html><body>";
+  int n = WiFi.scanNetworks();
+  Serial.println("Scan done");
+
+  if (n == 0)
+  {
+    Serial.println("no networks found");
+    html += "<h2>No Wi-Fi Networks Found</h2>";
+    html += "<p>Refresh the page to scan again.</p>";
+  }
+  else
+  {
+    Serial.print(n);
+    Serial.println(" networks found");
+    delay(10);
+    html += "<p>Select SSID</p>";
+
+    for (int i = 0; i < n; i++)
+    {
+      html += "<p><a href='/connect?ssid=" + WiFi.SSID(i) + "'>" + WiFi.SSID(i) + "</a></p>";
+    }
+  }
+  html += "</body></html>";
+
+  Serial.println("");
+  WiFi.scanDelete();
+
+  server.send(200, "text/html", html);
+}
+
+void handleConnect()
+{
+  String ssid = server.arg("ssid");
+  Serial.println("ssid: " + ssid);
+  String html = "<!DOCTYPE html><html><body>";
   html += "<h2>Enter Wi-Fi Credentials</h2>";
+  html += "<p>SSID: " + ssid + "</p>";
   html += "<form method='post' action='/config'>";
-  html += "SSID: <input type='text' name='ssid'><br>";
+  html += "<input type='hidden' name='ssid' value='" + ssid + "'>";
   html += "Password: <input type='password' name='password'><br>";
   html += "<input type='submit' value='Submit'>";
-  html += "</form></body></html>";
-
+  html += "</form>";
+  html += "</body></html>";
   server.send(200, "text/html", html);
 }
 
