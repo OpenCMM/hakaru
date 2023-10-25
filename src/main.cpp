@@ -1,19 +1,15 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <WebSocketsServer.h>
-#include <Adafruit_ADS1X15.h>
+#include <ConfigManager.h>
+#include <Sensor.h>
 
-Adafruit_ADS1115 ads;  /* Use this for the 16-bit version */
-
-int getSensorData();
 void ledBlink();
-void switchSensor(bool on);
 
-const char* ssid = "<ssid>";
-const char* password =  "<password>";
-const float slowResponseTime = 10.0;
 const int touchPin = 4; // GPIO4 as the touch-sensitive pin
-const int sensorControlPins[3] = {5, 18, 19};
+int sensorData = 0;
+int interval = 1000; // 1 second
+int threshold = 100;
 
 WebSocketsServer webSocket(81);
 
@@ -56,71 +52,42 @@ void touchCallback() {
 
 void setup() {
   Serial.begin(115200);
+  checkWifiInfo();
 
-  Serial.println("ADC Range: +/- 6.144V (1 bit = 3mV/ADS1015, 0.1875mV/ADS1115)");
+  setupSensor();
 
-  if (!ads.begin()) {
-    Serial.println("Failed to initialize ADS.");
-    while (1);
-  }
-
-  for (int i = 0; i < 3; i++) {
-    pinMode(sensorControlPins[i], OUTPUT);
-  }
-  switchSensor(true);
   touchAttachInterrupt(touchPin, touchCallback, 40); // Attach touch interrupt
 
   //Configure Touchpad as wakeup source
   esp_sleep_enable_touchpad_wakeup();
 
-  // connect to WiFi
-  WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(1000);
-    Serial.println("Connecting to WiFi..");
-  }
-
   ledBlink();
-  Serial.println("Connected to the WiFi network");
-
-  // print the IP address
-  Serial.println(WiFi.localIP());
 
   webSocket.begin();
   webSocket.onEvent(webSocketEvent);
 }
 
 void loop() {
-  webSocket.loop();
+  if (WiFi.status() == WL_CONNECTED) {
+    webSocket.loop();
 
-  // If streaming is enabled, get sensor data and send it to the client
-  if (streaming) {
-    int data = getSensorData();
-    String dataStr = String(data);
-    Serial.println(dataStr);
-    webSocket.broadcastTXT(dataStr.c_str(), dataStr.length());
-    delay(200);
+    // If streaming is enabled, get sensor data and send it to the client
+    if (streaming) {
+      int currentData = getSensorData();
+      // if the difference is greater than threshold, send data
+      if (abs(currentData - sensorData) < threshold) {
+        return;
+      }
+      sensorData = currentData;
+      String dataStr = String(currentData);
+      Serial.println(dataStr);
+      webSocket.broadcastTXT(dataStr.c_str(), dataStr.length());
+      delay(interval);
+    }
+  } else {
+    runServer();
+    delay(1000);
   }
-  delay(1000);
-}
-
-int getSensorData() {
-  int16_t adc0;
-  float volts0;
-
-  adc0 = ads.readADC_SingleEnded(0);
-
-  // volts0 = ads.computeVolts(adc0);
-
-  // Serial.println("-----------------------------------------------------------");
-  // Serial.print("AIN0: "); Serial.print(adc0); Serial.print("  "); Serial.print(volts0); Serial.println("V");
-
-  // response time
-  // fast: 1.5ms
-  // standard: 5ms
-  // slow: 10ms
-  delay(slowResponseTime);
-  return adc0;
 }
 
 // LED blink
@@ -128,11 +95,4 @@ void ledBlink() {
   digitalWrite(LED_BUILTIN, HIGH);
   delay(500);
   digitalWrite(LED_BUILTIN, LOW);
-}
-
-// Switch sensor
-void switchSensor(bool on) {
-  for (int i = 0; i < 3; i++) {
-    digitalWrite(sensorControlPins[i], on ? HIGH : LOW);
-  }
 }
