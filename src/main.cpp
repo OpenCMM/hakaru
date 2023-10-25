@@ -2,6 +2,7 @@
 #include <WiFi.h>
 #include <WebSocketsServer.h>
 #include <Adafruit_ADS1X15.h>
+#include <ConfigManager.h>
 
 Adafruit_ADS1115 ads;  /* Use this for the 16-bit version */
 
@@ -9,8 +10,6 @@ int getSensorData();
 void ledBlink();
 void switchSensor(bool on);
 
-const char* ssid = "<ssid>";
-const char* password =  "<password>";
 const float slowResponseTime = 10.0;
 const int touchPin = 4; // GPIO4 as the touch-sensitive pin
 const int sensorControlPins[3] = {5, 18, 19};
@@ -56,6 +55,7 @@ void touchCallback() {
 
 void setup() {
   Serial.begin(115200);
+  checkWifiInfo();
 
   Serial.println("ADC Range: +/- 6.144V (1 bit = 3mV/ADS1015, 0.1875mV/ADS1115)");
 
@@ -73,35 +73,29 @@ void setup() {
   //Configure Touchpad as wakeup source
   esp_sleep_enable_touchpad_wakeup();
 
-  // connect to WiFi
-  WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(1000);
-    Serial.println("Connecting to WiFi..");
-  }
-
   ledBlink();
-  Serial.println("Connected to the WiFi network");
-
-  // print the IP address
-  Serial.println(WiFi.localIP());
 
   webSocket.begin();
   webSocket.onEvent(webSocketEvent);
 }
 
 void loop() {
-  webSocket.loop();
+  if (WiFi.status() == WL_CONNECTED) {
+    webSocket.loop();
 
-  // If streaming is enabled, get sensor data and send it to the client
-  if (streaming) {
-    int data = getSensorData();
-    String dataStr = String(data);
-    Serial.println(dataStr);
-    webSocket.broadcastTXT(dataStr.c_str(), dataStr.length());
-    delay(200);
+    // If streaming is enabled, get sensor data and send it to the client
+    if (streaming) {
+      int data = getSensorData();
+      String dataStr = String(data);
+      Serial.println(dataStr);
+      webSocket.broadcastTXT(dataStr.c_str(), dataStr.length());
+      delay(200);
+    }
+    delay(1000);
+  } else {
+    runServer();
+    delay(1000);
   }
-  delay(1000);
 }
 
 int getSensorData() {
