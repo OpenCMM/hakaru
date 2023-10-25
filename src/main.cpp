@@ -7,6 +7,9 @@
 void ledBlink();
 
 const int touchPin = 4; // GPIO4 as the touch-sensitive pin
+int sensorData = 0;
+int interval = 1000; // 1 second
+int threshold = 100;
 
 WebSocketsServer webSocket(81);
 
@@ -70,13 +73,17 @@ void loop() {
 
     // If streaming is enabled, get sensor data and send it to the client
     if (streaming) {
-      int data = getSensorData();
-      String dataStr = String(data);
+      int currentData = getSensorData();
+      // if the difference is greater than threshold, send data
+      if (abs(currentData - sensorData) < threshold) {
+        return;
+      }
+      sensorData = currentData;
+      String dataStr = String(currentData);
       Serial.println(dataStr);
       webSocket.broadcastTXT(dataStr.c_str(), dataStr.length());
-      delay(200);
+      delay(interval);
     }
-    delay(1000);
   } else {
     runServer();
     delay(1000);
