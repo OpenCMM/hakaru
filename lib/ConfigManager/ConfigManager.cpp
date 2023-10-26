@@ -159,3 +159,13 @@ void saveWiFiCredentials(String ssid, String password)
   Serial.println("Network Credentials Saved using Preferences");
   preferences.end();
 }
+
+bool isIntervalValid(int interval)
+{
+  return interval >= 2 && interval <= 1000;
+}
+
+bool isThresholdValid(int threshold)
+{
+  return threshold >= 1 && threshold <= 20000;
+}

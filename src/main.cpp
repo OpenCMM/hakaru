@@ -38,10 +38,19 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
     if (strcmp(command, "start") == 0)
     {
       streaming = true; // Start streaming data when "startStreaming" message is received
-      interval = json["interval"];
-      threshold = json["threshold"];
-      Serial.println("Interval: " + String(interval));
-      Serial.println("Threshold: " + String(threshold));
+      const int _interval = json["interval"];
+      if (isIntervalValid(_interval))
+      {
+        interval = _interval;
+        Serial.println("Interval: " + String(interval));
+      }
+
+      const int _threshold = json["threshold"];
+      if (isThresholdValid(_threshold))
+      {
+        threshold = _threshold;
+        Serial.println("Threshold: " + String(threshold));
+      }
       Serial.println("Streaming started");
     }
     else if (strcmp(command, "stop") == 0)

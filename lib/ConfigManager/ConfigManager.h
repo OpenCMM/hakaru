@@ -10,3 +10,5 @@ void handleRoot();
 void handleConfig();
 void handleConnect();
 void connectToWiFi();
+bool isIntervalValid(int interval);
+bool isThresholdValid(int threshold);
