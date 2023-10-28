@@ -12,3 +12,6 @@ void handleConnect();
 void connectToWiFi();
 bool isIntervalValid(int interval);
 bool isThresholdValid(int threshold);
+void scanNetworks();
+bool checkIfScanCompleted();
+void resetWifiCredentialsWithWs();

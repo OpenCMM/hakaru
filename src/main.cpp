@@ -3,6 +3,7 @@
 #include <WebSocketsServer.h>
 #include <ConfigManager.h>
 #include <Sensor.h>
+#include <ESPmDNS.h>
 #include <ArduinoJson.h>
 
 void ledBlink();
@@ -11,6 +12,7 @@ const int touchPin = 4; // GPIO4 as the touch-sensitive pin
 int sensorData = 0;
 int interval = 1000; // 1 second
 int threshold = 100;
+const char* hostname = "opencmm";
 
 WebSocketsServer webSocket(81);
 
@@ -67,6 +69,9 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
       switchSensor(false);
       delay(1000);
       esp_deep_sleep_start();
+    } else if (strcmp(command, "resetWifi") == 0) {
+      Serial.println("Resetting Wi-Fi credentials");
+      resetWifiCredentialsWithWs();
     }
   }
 
@@ -89,7 +94,7 @@ void setup()
 {
   Serial.begin(115200);
   checkWifiInfo();
-
+  MDNS.begin(hostname);
   setupSensor();
 
   touchAttachInterrupt(touchPin, touchCallback, 40); // Attach touch interrupt
@@ -124,11 +129,12 @@ void loop()
       webSocket.broadcastTXT(dataStr.c_str(), dataStr.length());
       delay(interval);
     }
-  }
-  else
-  {
+  } else {
     runServer();
     delay(1000);
+    if (!checkIfScanCompleted()) {
+      scanNetworks();
+    }
   }
 }
 
