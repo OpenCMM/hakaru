@@ -14,3 +14,4 @@ bool isIntervalValid(int interval);
 bool isThresholdValid(int threshold);
 void scanNetworks();
 bool checkIfScanCompleted();
+void resetWifiCredentials();

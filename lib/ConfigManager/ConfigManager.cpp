@@ -16,6 +16,9 @@ IPAddress local_ip(192, 168, 1, 1);
 IPAddress gateway(192, 168, 1, 1);
 IPAddress subnet(255, 255, 255, 0);
 
+const char *htmlHeader = "<!DOCTYPE html><html><header><meta charset='utf-8' /><title>OpenCMM WiFI Settings</title><style>html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}</style></header><body>";
+const char *htmlFooter = "</body></html>";
+
 void checkWifiInfo()
 {
   preferences.begin("credentials", false);
@@ -88,16 +91,16 @@ void connectToWiFi()
 
 void handleRoot()
 {
-  String html = "";
+  String html = htmlHeader;
   if (scanCompleted) { 
       html += scanResults;
       scanResults = "";  // Clear the results
       scanCompleted = false;
   } else {
-      html += "<!DOCTYPE html><html><body>";
       html += "<h2>Scanning for Wi-Fi Networks...</h2>";
-      html += "</body></html>";
+      html += "<h2>周辺のWifiの情報を取得しています...</h2>";
   }
+  html += htmlFooter;
 
   Serial.println("Sending Wi-Fi scan results");
   server.send(200, "text/html", html);
@@ -107,15 +110,16 @@ void handleConnect()
 {
   String ssid = server.arg("ssid");
   Serial.println("ssid: " + ssid);
-  String html = "<!DOCTYPE html><html><body>";
+  String html = htmlHeader;
   html += "<h2>Enter Wi-Fi Credentials</h2>";
+  html += "<h2>Wi-Fiのパスワードを入力してください</h2>";
   html += "<p>SSID: " + ssid + "</p>";
   html += "<form method='post' action='/config'>";
   html += "<input type='hidden' name='ssid' value='" + ssid + "'>";
   html += "Password: <input type='password' name='password'><br>";
-  html += "<input type='submit' value='Submit'>";
+  html += "<input type='submit' value='Submit' style='margin-top: 20px;'>";
   html += "</form>";
-  html += "</body></html>";
+  html += htmlFooter;
   server.send(200, "text/html", html);
 }
 
@@ -167,15 +171,22 @@ bool isThresholdValid(int threshold)
 
 void scanNetworks() {
   int n = WiFi.scanNetworks();
-  scanResults = "<!DOCTYPE html><html><body><h2>Select Wi-Fi Network</h2>";
+  scanResults += "<h2>Select Wi-Fi Network</h2>";
+  scanResults += "<h2>Wi-Fiを選択してください</h2>";
   for (int i = 0; i < n; i++) {
     scanResults += "<p><a href='/connect?ssid=" + WiFi.SSID(i) + "'>" + WiFi.SSID(i) + "</a></p>";
   }
-  scanResults += "</body></html>";
   scanCompleted = true;
   WiFi.scanDelete();
 }
 
 bool checkIfScanCompleted() {
   return scanCompleted;
+}
+
+void resetWifiCredentials() {
+  preferences.clear();
+  // disconnect from Wi-Fi
+  WiFi.disconnect(true);
+  startAPServer();
 }

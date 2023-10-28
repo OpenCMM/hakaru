@@ -69,6 +69,9 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
       switchSensor(false);
       delay(1000);
       esp_deep_sleep_start();
+    } else if (strcmp(command, "resetWifi") == 0) {
+      Serial.println("Resetting Wi-Fi credentials");
+      resetWifiCredentials();
     }
   }
 
@@ -90,8 +93,8 @@ void touchCallback()
 void setup()
 {
   Serial.begin(115200);
-  MDNS.begin(hostname);
   checkWifiInfo();
+  MDNS.begin(hostname);
   setupSensor();
 
   touchAttachInterrupt(touchPin, touchCallback, 40); // Attach touch interrupt
