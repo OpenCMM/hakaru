@@ -126,11 +126,12 @@ void loop()
       webSocket.broadcastTXT(dataStr.c_str(), dataStr.length());
       delay(interval);
     }
-  }
-  else
-  {
+  } else {
     runServer();
     delay(1000);
+    if (!checkIfScanCompleted()) {
+      scanNetworks();
+    }
   }
 }
 
