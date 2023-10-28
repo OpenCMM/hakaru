@@ -71,7 +71,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
       esp_deep_sleep_start();
     } else if (strcmp(command, "resetWifi") == 0) {
       Serial.println("Resetting Wi-Fi credentials");
-      resetWifiCredentials();
+      resetWifiCredentialsWithWs();
     }
   }
 

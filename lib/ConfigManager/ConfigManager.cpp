@@ -52,7 +52,6 @@ void startAPServer()
   server.on("/", HTTP_GET, handleRoot);
   server.on("/connect", HTTP_GET, handleConnect);
   server.on("/config", HTTP_POST, handleConfig);
-
   server.begin();
 }
 
@@ -128,7 +127,12 @@ void handleConfig()
   String ssid = server.arg("ssid");
   String password = server.arg("password");
 
-  saveWiFiCredentials(ssid, password);
+  // Send message to client
+  String message = htmlHeader;
+  message += "<h2>Connecting to Wi-Fi...</h2>";
+  message += "<h2>Wi-Fiに接続しています...</h2>";
+  message += htmlFooter;
+  server.send(200, "text/html", message);
 
   // Switch to Station mode and connect to the user's Wi-Fi network
   WiFi.softAPdisconnect();
@@ -144,6 +148,7 @@ void handleConfig()
     startAPServer();
     return;
   } else {
+    saveWiFiCredentials(ssid, password);
     Serial.println("Connected to the WiFi network");
     server.close();
   }
@@ -171,20 +176,27 @@ bool isThresholdValid(int threshold)
 
 void scanNetworks() {
   int n = WiFi.scanNetworks();
-  scanResults += "<h2>Select Wi-Fi Network</h2>";
-  scanResults += "<h2>Wi-Fiを選択してください</h2>";
-  for (int i = 0; i < n; i++) {
-    scanResults += "<p><a href='/connect?ssid=" + WiFi.SSID(i) + "'>" + WiFi.SSID(i) + "</a></p>";
+  Serial.println("n: " + String(n));
+  if (n <= 0) {
+    scanResults += "<h2>No Wi-Fi Networks found</h2>";
+    scanResults += "<h2>Wi-Fiが見つかりませんでした</h2>";
+  } else {
+    scanResults += "<h2>Select Wi-Fi Network</h2>";
+    scanResults += "<h2>Wi-Fiを選択してください</h2>";
+    for (int i = 0; i < n; i++) {
+      scanResults += "<p><a href='/connect?ssid=" + WiFi.SSID(i) + "'>" + WiFi.SSID(i) + "</a></p>";
+    }
   }
-  scanCompleted = true;
   WiFi.scanDelete();
+  scanCompleted = true;
 }
 
 bool checkIfScanCompleted() {
   return scanCompleted;
 }
 
-void resetWifiCredentials() {
+void resetWifiCredentialsWithWs() {
+  preferences.begin("credentials", false);
   preferences.clear();
   // disconnect from Wi-Fi
   WiFi.disconnect(true);
