@@ -3,6 +3,7 @@
 #include <WebSocketsServer.h>
 #include <ConfigManager.h>
 #include <Sensor.h>
+#include <ESPmDNS.h>
 #include <ArduinoJson.h>
 
 void ledBlink();
@@ -11,6 +12,7 @@ const int touchPin = 4; // GPIO4 as the touch-sensitive pin
 int sensorData = 0;
 int interval = 1000; // 1 second
 int threshold = 100;
+const char* hostname = "opencmm";
 
 WebSocketsServer webSocket(81);
 
@@ -88,8 +90,8 @@ void touchCallback()
 void setup()
 {
   Serial.begin(115200);
+  MDNS.begin(hostname);
   checkWifiInfo();
-
   setupSensor();
 
   touchAttachInterrupt(touchPin, touchCallback, 40); // Attach touch interrupt
