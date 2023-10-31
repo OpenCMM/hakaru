@@ -18,3 +18,15 @@ sequenceDiagram
     ESP32-->>-ESP32: Wake up from deep sleep
     ESP32->>+ESP32: Start booting
 ```
+
+## Install Mosquitto MQTT Broker
+
+ref. https://www.vultr.com/docs/install-mosquitto-mqtt-broker-on-ubuntu-20-04-server/
+
+/etc/mosquitto/conf.d/default.conf
+
+```
+listener 1883 0.0.0.0
+allow_anonymous false
+password_file /etc/mosquitto/passwd
+```
