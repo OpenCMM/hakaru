@@ -84,6 +84,8 @@ void connectToWiFi()
     Serial.println(WiFi.localIP());
   } else {
     Serial.println("Could not connect to WiFi.");
+    // delete existing credentials
+    preferences.clear();
     startAPServer();
   }
 }
