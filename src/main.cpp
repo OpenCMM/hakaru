@@ -17,7 +17,7 @@ int sensorData = 0;
 int interval = 1000; // 1 second
 int threshold = 100;
 const char* hostname = "opencmm";
-const char* mqttServer = "192.168.10.104";
+const char* mqttServer = "192.168.10.111";
 const int mqttPort = 1883;
 const char* mqttUser = "opencmm";
 const char* mqttPassword = "opencmm";
@@ -25,6 +25,7 @@ const char* mqttPassword = "opencmm";
 const char* clientId = "ESP32Client";
 const char* sensorTopic = "sensor/data";
 const char* controlTopic = "sensor/control";
+const char* pingTopic = "sensor/ping";
 
 
 WiFiClient espClient;
@@ -60,54 +61,58 @@ void setup()
 void callback(char* topic, byte* payload, unsigned int length) {
   Serial.print("Message arrived on topic: ");
   Serial.println(topic);
+  // check payload is 'ping' and send response 'pong'
+  if (strcmp(topic, pingTopic) == 0 && strncmp((char*)payload, "ping", 4) == 0) {
+    client.publish(pingTopic, "pong");
+  } else if (strcmp(topic, controlTopic) == 0) {
+    char receivedJson[200];
+    for (int i = 0; i < length; i++) {
+      receivedJson[i] = (char)payload[i];
+    }
+    receivedJson[length] = '\0';
+    // Deserialize the received JSON string
+    const uint8_t size = JSON_OBJECT_SIZE(3);
+    StaticJsonDocument<size> jsonDoc;
+    DeserializationError error = deserializeJson(jsonDoc, receivedJson);
 
-  char receivedJson[200];
-  for (int i = 0; i < length; i++) {
-    receivedJson[i] = (char)payload[i];
-  }
-  receivedJson[length] = '\0';
-  // Deserialize the received JSON string
-  const uint8_t size = JSON_OBJECT_SIZE(3);
-  StaticJsonDocument<size> jsonDoc;
-  DeserializationError error = deserializeJson(jsonDoc, receivedJson);
+    if (error) {
+      Serial.print("Failed to parse JSON: ");
+      Serial.println(error.c_str());
+    } else {
+      const char *command = jsonDoc["command"];
+      if (strcmp(command, "config") == 0) {
+        const int _interval = jsonDoc["interval"];
+        if (isIntervalValid(_interval))
+        {
+          interval = _interval;
+          Serial.println("Interval: " + String(interval));
+        }
 
-  if (error) {
-    Serial.print("Failed to parse JSON: ");
-    Serial.println(error.c_str());
-  } else {
-    const char *command = jsonDoc["command"];
-    if (strcmp(command, "config") == 0) {
-      const int _interval = jsonDoc["interval"];
-      if (isIntervalValid(_interval))
+        const int _threshold = jsonDoc["threshold"];
+        if (isThresholdValid(_threshold))
+        {
+          threshold = _threshold;
+          Serial.println("Threshold: " + String(threshold));
+        }
+        Serial.println("Configured");
+        Serial.print("Received JSON - Threshold: ");
+        Serial.print(threshold);
+        Serial.print(", Interval: ");
+        Serial.print(interval);
+        Serial.print(", Command: ");
+        Serial.println(command);
+      } else if (strcmp(command, "deepSleep") == 0)
       {
-        interval = _interval;
-        Serial.println("Interval: " + String(interval));
+        Serial.println("Going to sleep now");
+        delay(1000);
+        // turn off sensor
+        switchSensor(false);
+        delay(1000);
+        esp_deep_sleep_start();
+      } else if (strcmp(command, "resetWifi") == 0) {
+        Serial.println("Resetting Wi-Fi credentials");
+        resetWifiCredentialsWithWs();
       }
-
-      const int _threshold = jsonDoc["threshold"];
-      if (isThresholdValid(_threshold))
-      {
-        threshold = _threshold;
-        Serial.println("Threshold: " + String(threshold));
-      }
-      Serial.println("Configured");
-      Serial.print("Received JSON - Threshold: ");
-      Serial.print(threshold);
-      Serial.print(", Interval: ");
-      Serial.print(interval);
-      Serial.print(", Command: ");
-      Serial.println(command);
-    } else if (strcmp(command, "deepSleep") == 0)
-    {
-      Serial.println("Going to sleep now");
-      delay(1000);
-      // turn off sensor
-      switchSensor(false);
-      delay(1000);
-      esp_deep_sleep_start();
-    } else if (strcmp(command, "resetWifi") == 0) {
-      Serial.println("Resetting Wi-Fi credentials");
-      resetWifiCredentialsWithWs();
     }
   }
 }
@@ -152,6 +157,7 @@ void reconnect() {
     if (client.connect(clientId, mqttUser, mqttPassword)) {
       Serial.println("Connected to MQTT broker");
       client.subscribe(controlTopic);
+      client.subscribe(pingTopic);
     } else {
       Serial.print("Failed, rc=");
       Serial.print(client.state());
