@@ -26,6 +26,7 @@ const char* clientId = "ESP32Client";
 const char* sensorTopic = "sensor/data";
 const char* controlTopic = "sensor/control";
 const char* pingTopic = "sensor/ping";
+const char* pongTopic = "sensor/pong";
 
 
 WiFiClient espClient;
@@ -63,7 +64,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
   Serial.println(topic);
   // check payload is 'ping' and send response 'pong'
   if (strcmp(topic, pingTopic) == 0 && strncmp((char*)payload, "ping", 4) == 0) {
-    client.publish(pingTopic, "pong");
+    client.publish(pongTopic, "pong");
   } else if (strcmp(topic, controlTopic) == 0) {
     char receivedJson[200];
     for (int i = 0; i < length; i++) {
