@@ -2,7 +2,6 @@
 
 Adafruit_ADS1115 ads;  /* Use this for the 16-bit version */
 
-const float slowResponseTime = 10.0;
 const int sensorControlPins[3] = {5, 18, 19};
 
 void setupSensor() {
@@ -27,7 +26,7 @@ void switchSensor(bool on) {
   }
 }
 
-int getSensorData() {
+std::pair<int16_t, std::pair<time_t, int>> getSensorData() {
   int16_t adc0;
   float volts0;
 
@@ -42,6 +41,7 @@ int getSensorData() {
   // fast: 1.5ms
   // standard: 5ms
   // slow: 10ms
-  delay(slowResponseTime);
-  return adc0;
+  time_t now = time(nullptr);
+  unsigned long millisSinceStart = millis();
+  return std::make_pair(adc0, std::make_pair(now, millisSinceStart % 1000));
 }

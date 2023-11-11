@@ -19,6 +19,8 @@ IPAddress subnet(255, 255, 255, 0);
 const char *htmlHeader = "<!DOCTYPE html><html><header><meta charset='utf-8' /><title>OpenCMM WiFI Settings</title><style>html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}</style></header><body>";
 const char *htmlFooter = "</body></html>";
 
+const char* ntpServer = "pool.ntp.org";
+
 void checkWifiInfo()
 {
   preferences.begin("credentials", false);
@@ -82,6 +84,7 @@ void connectToWiFi()
   if (WiFi.status() == WL_CONNECTED) {
     Serial.println("Successfully connected to WiFi.");
     Serial.println(WiFi.localIP());
+    configTime(0, 0, ntpServer);
   } else {
     Serial.println("Could not connect to WiFi.");
     // delete existing credentials
@@ -153,6 +156,7 @@ void handleConfig()
     saveWiFiCredentials(ssid, password);
     Serial.println("Connected to the WiFi network");
     server.close();
+    configTime(0, 0, ntpServer);
   }
 }
 

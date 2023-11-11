@@ -1,6 +1,7 @@
 #include <WiFi.h>
 #include <WebServer.h>
 #include <Preferences.h>
+#include <time.h>
 
 void checkWifiInfo();
 void runServer();
