@@ -10,14 +10,14 @@
 void ledBlink();
 void callback(char* topic, byte* message, unsigned int length);
 void reconnect();
-void publishSensorData(int sensorData);
+void publishSensorData(int currentData, std::pair<time_t, int>);
 
 const int touchPin = 4; // GPIO4 as the touch-sensitive pin
 int sensorData = 0;
 int interval = 1000; // 1 second
 int threshold = 100;
 const char* hostname = "opencmm";
-const char* mqttServer = "192.168.10.111";
+const char* mqttServer = "192.168.10.104";
 const int mqttPort = 1883;
 const char* mqttUser = "opencmm";
 const char* mqttPassword = "opencmm";
@@ -118,9 +118,14 @@ void callback(char* topic, byte* payload, unsigned int length) {
   }
 }
 
-void publishSensorData(int sensorData) {
-  char message[20];
-  snprintf(message, 20, "%d", sensorData);
+void publishSensorData(int currentData, std::pair<time_t, int> currentTime) {
+  const uint8_t size = JSON_OBJECT_SIZE(3);
+  StaticJsonDocument<size> doc;
+  doc["data"] = currentData;
+  doc["timestamp"] = currentTime.first;
+  doc["millis"] = currentTime.second;
+  char message[200];
+  serializeJson(doc, message);
   client.publish(sensorTopic, message);
 }
 
@@ -133,14 +138,15 @@ void loop()
     }
     client.loop();
 
-    int currentData = getSensorData();
+    std::pair<int16_t, std::pair<time_t, int>> sensorDataPair = getSensorData();
+    int currentData = sensorDataPair.first;
     // if the difference is greater than threshold, send data
     if (abs(currentData - sensorData) < threshold) {
       return;
     }
     sensorData = currentData;
     Serial.println(currentData);
-    publishSensorData(currentData);
+    publishSensorData(currentData, sensorDataPair.second);
 
     delay(interval);
   } else {
