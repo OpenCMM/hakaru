@@ -1,6 +1,9 @@
 # hakaru
 Stream the sensor data
 
+### Loop interval
+[loopInterval.md](loopInterval.md)
+
 ```mermaid
 sequenceDiagram
     participant ESP32 as ESP32

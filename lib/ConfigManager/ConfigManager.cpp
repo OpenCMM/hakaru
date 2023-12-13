@@ -64,6 +64,8 @@ void connectToWiFi()
 
   delay(3000);
 
+  preferences.clear();
+
   if (ssid != "" && password != "")
   {
     Serial.println("ssid: " + ssid);
@@ -172,7 +174,7 @@ void saveWiFiCredentials(String ssid, String password)
 
 bool isIntervalValid(int interval)
 {
-  return interval >= 2 && interval <= 1000;
+  return interval <= 1000;
 }
 
 bool isThresholdValid(int threshold)

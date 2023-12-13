@@ -15,9 +15,9 @@ void publishSensorData(int currentData, std::pair<time_t, int>);
 const int touchPin = 4; // GPIO4 as the touch-sensitive pin
 int sensorData = 0;
 int interval = 1000; // 1 second
-int threshold = 100;
+int threshold = 1000;
 const char* hostname = "opencmm";
-const char* mqttServer = "192.168.10.104";
+const char* mqttServer = "192.168.10.116";
 const int mqttPort = 1883;
 const char* mqttUser = "opencmm";
 const char* mqttPassword = "opencmm";
@@ -28,6 +28,9 @@ const char* controlTopic = "sensor/control";
 const char* pingTopic = "sensor/ping";
 const char* pongTopic = "sensor/pong";
 
+int lastMillis = 0;
+int intervalCounter = 0;
+int totalInterval = 0;
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -139,16 +142,26 @@ void loop()
     client.loop();
 
     std::pair<int16_t, std::pair<time_t, int>> sensorDataPair = getSensorData();
-    int currentData = sensorDataPair.first;
-    // if the difference is greater than threshold, send data
-    if (abs(currentData - sensorData) < threshold) {
-      return;
+    std::pair<time_t, int> currentTime = sensorDataPair.second;
+    // calculate loop interval
+    int loopInterval = 0;
+    if (currentTime.second > lastMillis) {
+      loopInterval = currentTime.second-lastMillis;
+    } else {
+      loopInterval = 1000 - lastMillis + currentTime.second;
     }
-    sensorData = currentData;
-    Serial.println(currentData);
-    publishSensorData(currentData, sensorDataPair.second);
+    totalInterval += loopInterval;
+    intervalCounter++;
+    if (intervalCounter == 1000) {
+      Serial.println("Average loop interval: " + String(totalInterval / intervalCounter));
+      intervalCounter = 0;
+      totalInterval = 0;
+    }
+    lastMillis = currentTime.second;
 
-    delay(interval);
+    if (interval != 0) {
+      delay(interval);
+    }
   } else {
     runServer();
     delay(1000);
