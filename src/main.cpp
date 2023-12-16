@@ -15,9 +15,9 @@ void publishSensorData(int currentData, std::pair<time_t, int>);
 const int touchPin = 4; // GPIO4 as the touch-sensitive pin
 int sensorData = 0;
 int interval = 1000; // 1 second
-int threshold = 100;
+int threshold = 1000;
 const char* hostname = "opencmm";
-const char* mqttServer = "192.168.10.104";
+const char* mqttServer = "192.168.0.19";
 const int mqttPort = 1883;
 const char* mqttUser = "opencmm";
 const char* mqttPassword = "opencmm";
@@ -148,7 +148,9 @@ void loop()
     Serial.println(currentData);
     publishSensorData(currentData, sensorDataPair.second);
 
-    delay(interval);
+    if (interval > 0) {
+      delay(interval);
+    }
   } else {
     runServer();
     delay(1000);
